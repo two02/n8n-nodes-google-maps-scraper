@@ -1,4 +1,10 @@
-import type { ICredentialType, INodeProperties, Icon, ICredentialTestRequest } from 'n8n-workflow';
+import type {
+	IAuthenticateGeneric,
+	ICredentialType,
+	ICredentialTestRequest,
+	Icon,
+	INodeProperties,
+} from 'n8n-workflow';
 
 export class GeoScraperApi implements ICredentialType {
 	name = 'geoScraperApi';
@@ -20,10 +26,19 @@ export class GeoScraperApi implements ICredentialType {
 		},
 	];
 
+	authenticate: IAuthenticateGeneric = {
+		type: 'generic',
+		properties: {
+			headers: {
+				'X-Berserker-Token': '={{$credentials.apiToken}}',
+			},
+		},
+	};
+
 	test: ICredentialTestRequest = {
 		request: {
 			method: 'GET',
-			url: 'http://api.geoscraper.net/test-api-key',
+			url: 'https://api.geoscraper.net/test-api-key',
 			headers: {
 				'X-Berserker-Token': '={{$credentials.apiToken}}',
 				'Authorization': 'Bearer {{$credentials.apiToken}}',
