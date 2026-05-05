@@ -1,6 +1,6 @@
 {
   "name": "@two02/n8n-nodes-google-maps-scraper",
-  "version": "1.0.12",
+  "version": "1.0.13",
   "description": "n8n custom nodes for GeoScraper API integration.",
   "keywords": [
     "n8n-community-node-package",
@@ -52,6 +52,5 @@
   "peerDependencies": {
     "n8n-workflow": "*"
   },
-  "dependencies": {
-  }
+  "dependencies": {}
 }
