@@ -1,11 +1,11 @@
 import type {
 	IExecuteFunctions,
+	IDataObject,
 	INodeExecutionData,
 	INodeType,
 	INodeTypeDescription,
 } from 'n8n-workflow';
 import { NodeConnectionType, NodeOperationError } from 'n8n-workflow';
-import axios from 'axios';
 
 export class GeoScraperGoogleMap implements INodeType {
 	description: INodeTypeDescription = {
@@ -20,6 +20,13 @@ export class GeoScraperGoogleMap implements INodeType {
 		},
 		inputs: [NodeConnectionType.Main],
 		outputs: [NodeConnectionType.Main],
+		requestDefaults: {
+			baseURL: 'https://api.geoscraper.net',
+			headers: {
+				Accept: 'application/json',
+				'Content-Type': 'application/json',
+			},
+		},
 		credentials: [
 			{
 				name: 'geoScraperApi',
@@ -46,8 +53,8 @@ export class GeoScraperGoogleMap implements INodeType {
 				name: 'll',
 				type: 'string',
 				default: '',
-				placeholder: '@41.6948377,44.8015781,13z',
-				description: 'Coordinates and zoom level in the format "@latitude,longitude,zoomz"',
+				placeholder: 'japan',
+				description: 'Location name (for example, "japan") or coordinates in the format "@latitude,longitude,zoomz"',
 				displayOptions: {
 					show: {
 						operation: ['mapSearch', 'placeSearch'],
@@ -60,8 +67,8 @@ export class GeoScraperGoogleMap implements INodeType {
 				name: 'query',
 				type: 'string',
 				default: '',
-				placeholder: 'hotels',
-				description: 'The search query, e.g., "hotels in usa"',
+				placeholder: 'kfc',
+				description: 'The search query, for example "kfc"',
 				displayOptions: {
 					show: {
 						operation: ['mapSearch', 'placeSearch'],
@@ -165,7 +172,7 @@ export class GeoScraperGoogleMap implements INodeType {
 			},
 			{
 				displayName: 'Use Cached',
-				name: 'catched',
+				name: 'cached',
 				type: 'boolean',
 				default: true,
 				description: 'Whether to use cached data if available',
@@ -177,24 +184,21 @@ export class GeoScraperGoogleMap implements INodeType {
 		const items = this.getInputData();
 		const returnData: INodeExecutionData[] = [];
 
-		const credentials = await this.getCredentials('geoScraperApi');
-		const apiToken = credentials.apiToken as string;
-
 		for (let i = 0; i < items.length; i++) {
 			try {
 				const operation = this.getNodeParameter('operation', i) as string;
 				const hl = this.getNodeParameter('hl', i, 'en') as string;
-				const catched = this.getNodeParameter('catched', i, true) as boolean;
+				const cached = this.getNodeParameter('cached', i, true) as boolean;
 
-				let url = '';
-				let payload: any = {};
+				let endpoint = '';
+				let payload: IDataObject = {};
 
 				switch (operation) {
 					case 'mapSearch': {
 						const ll = this.getNodeParameter('ll', i) as string;
 						const query = this.getNodeParameter('query', i) as string;
 						const start = this.getNodeParameter('start', i, 0) as number;
-						url = 'https://api.geoscraper.net/google/map/results';
+						endpoint = '/google/map/results';
 						payload = { ll, query };
 						if (start !== undefined) payload.start = start;
 						break;
@@ -202,7 +206,7 @@ export class GeoScraperGoogleMap implements INodeType {
 					case 'placeSearch': {
 						const ll = this.getNodeParameter('ll', i) as string;
 						const query = this.getNodeParameter('query', i) as string;
-						url = 'https://api.geoscraper.net/google/map/search/place';
+						endpoint = '/google/map/search/place';
 						payload = { ll, query };
 						break;
 					}
@@ -210,7 +214,7 @@ export class GeoScraperGoogleMap implements INodeType {
 						const idType = this.getNodeParameter('idType', i) as string;
 						const data_id = this.getNodeParameter('data_id', i, '') as string;
 						const place_id = this.getNodeParameter('place_id', i, '') as string;
-						url = 'https://api.geoscraper.net/google/map/place';
+						endpoint = '/google/map/place';
 						if (idType === 'data_id' && data_id) {
 							payload.data_id = data_id;
 						} else if (idType === 'place_id' && place_id) {
@@ -223,7 +227,7 @@ export class GeoScraperGoogleMap implements INodeType {
 					case 'review': {
 						const data_id = this.getNodeParameter('review_data_id', i) as string;
 						const token = this.getNodeParameter('token', i, '') as string;
-						url = 'https://api.geoscraper.net/google/map/review';
+						endpoint = '/google/map/review';
 						payload = { data_id };
 						if (token) payload.token = token;
 						break;
@@ -233,14 +237,15 @@ export class GeoScraperGoogleMap implements INodeType {
 				}
 
 				if (hl) payload.hl = hl;
-				if (catched !== undefined) payload.catched = catched;
+				if (cached !== undefined) payload.cached = cached;
 
-				const headers = {
-					'X-Berserker-Token': apiToken,
-				};
-
-				const response = await axios.post(url, payload, { headers });
-				const data = response.data;
+				const data = await this.helpers.requestWithAuthentication.call(this, 'geoScraperApi', {
+					method: 'POST',
+					baseURL: 'https://api.geoscraper.net',
+					url: endpoint,
+					body: payload,
+					json: true,
+				});
 
 				if (Array.isArray(data)) {
 					for (const result of data) {
@@ -249,20 +254,32 @@ export class GeoScraperGoogleMap implements INodeType {
 				} else {
 					returnData.push({ json: data });
 				}
-			} catch (error: any) {
+			} catch (error: unknown) {
+				const requestError = error as {
+					message?: string;
+					statusCode?: number;
+					response?: { status?: number; data?: IDataObject };
+					error?: { detail?: string };
+				};
+				const statusCode = requestError.statusCode ?? requestError.response?.status;
+				const detail = (requestError.error?.detail ??
+					(requestError.response?.data?.detail as string | undefined)) as string | undefined;
+
 				if (
-					error.response &&
-					error.response.status === 404 &&
-					error.response.data &&
-					error.response.data.detail === 'No data found'
+					statusCode === 404 &&
+					detail === 'No data found'
 				) {
 					returnData.push({ json: { message: 'No more results', detail: 'No data found' }, pairedItem: i });
 					continue;
 				}
 				if (this.continueOnFail()) {
-					returnData.push({ json: { error: error.message }, pairedItem: i });
+					returnData.push({ json: { error: requestError.message ?? 'Request failed' }, pairedItem: i });
 				} else {
-					throw new NodeOperationError(this.getNode(), error, { itemIndex: i });
+					throw new NodeOperationError(
+						this.getNode(),
+						requestError.message ?? 'Request failed',
+						{ itemIndex: i },
+					);
 				}
 			}
 		}
