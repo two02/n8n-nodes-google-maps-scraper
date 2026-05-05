@@ -14,7 +14,7 @@ You can install this node from npm:
 npm install @two02/n8n-nodes-google-maps-scraper
 ```
 
-Geoscraper is a powerful tool for scraping Google Maps data, including reviews, search results, and auto search suggestions. It requires a Pro plan to access the API, but you can start with a free trial before paying. Obtain your API token by visiting [https://geoscraper.net/api](https://geoscraper.net/api). Use this node to access n8n's Google Maps scraper capabilities.
+Geoscraper is a powerful tool for scraping Google Maps data, including reviews, search results, and auto search suggestions. Pricing is now package-based with both pay-as-you-go credits and monthly plans. Obtain your API token by visiting [https://geoscraper.net/api](https://geoscraper.net/api), then use this node to access GeoScraper in n8n workflows.
 
 [n8n](https://n8n.io/) is a [fair-code licensed](https://docs.n8n.io/reference/license/) workflow automation platform.
 
@@ -40,21 +40,20 @@ This node supports the following operations:
 
 ## Credentials
 
-To use this node, you need a Geoscraper API token. You can get a token by signing up for a free trial or Pro plan at [https://geoscraper.net/api](https://geoscraper.net/api). After signing up, copy your API token and add it to the node's credentials in n8n.
+To use this node, you need a Geoscraper API token. You can get a token by signing up at [https://geoscraper.net/api](https://geoscraper.net/api), choosing either pay-as-you-go credits or a monthly package. After signing up, copy your API token and add it to the node's credentials in n8n.
 
----
+--
 
-🚀 **Special Promotion!** 🚀
+## Pricing
 
-**Use the code `N8N` to get a 35% lifetime discount on your Geoscraper subscription!**
+GeoScraper pricing has changed and is now package-based:
 
----
+- **Pay-as-you-go:** `$1 per 1,000 credits` (no subscription required)
+- **Google Maps scraping usage:** `2 credits per request`
+- **Monthly plans:** Starter, Pro, and Business tiers
+- **Enterprise:** Custom packages for high-volume teams
 
-## Unlimited Scraping Offer
-
-💡 **We offer unlimited scraping for a fixed monthly price — no pay-per-use charges!**
-
-Enjoy predictable costs and scrape as much as you need with your subscription.
+See the latest pricing and package details here: [https://www.geoscraper.net/pricing](https://www.geoscraper.net/pricing).
 
 ---
 
@@ -71,7 +70,7 @@ To automate the extraction of Google Maps data for your business or research nee
 ### How to Get Your GeoScraper API Token
 
 1. Go to [https://geoscraper.net/api](https://geoscraper.net/api).
-2. Log in or sign up for a free trial or Pro plan.
+2. Log in or sign up and choose a pricing package (pay-as-you-go credits or monthly plan).
 3. Once logged in, you will see your API token on the dashboard. See the example below:
 
    ![Copy your API token from the GeoScraper dashboard](images/api/api1.png)
